@@ -40,7 +40,7 @@ class UserController {
                 if (user) {
                     if (bcrypt.compareSync(req.body.password, user.password)) {
                         let token = jwt.sign({
-                            id: user._id,
+                            _id: user._id,
                             name: user.name,
                             email: user.email
                         }, process.env.JWT_SECRET)
@@ -74,11 +74,74 @@ class UserController {
             })
     }
 
-    static dashboard(req, res, next) {
-        res.json({
-            data1: req.headers,
-            data2: res.locals
-        })
+    static findById(req, res, next) {
+        let {_id} = res.locals.payloads
+        User.findById(_id)
+            .then((user) => {
+                if (user) {
+                    res.status(200).json({
+                        result: {
+                            _id: user._id,
+                            name: user.name,
+                            email: user.email
+                        },
+                        error: null
+                    })
+                } else {
+                    res.status(400).json({
+                        result: null,
+                        error: {
+                            message: 'User not found'
+                        }
+                    })
+                }
+            })
+    }
+
+    static patch(req, res, next) {
+        let {_id} = res.locals.payloads
+        let params = req.body
+        User.findById(_id)
+            .then((user) => {
+                if (!user) {
+                    res.status(404).json({
+                        result: null,
+                        error: {
+                            message: 'user not found'
+                        }
+                    })
+                } else {      
+                    if (req.body.password) {
+                        user.name = req.body.name || user.name
+                        user.email = req.body.email || user.email
+                        user.password = req.body.password
+                        return user.save()
+                    } else {
+                        return user.update(params)
+                    }
+                }
+            })
+
+            .then((done) => {
+                if (done.nModified == 0) {
+                    res.status(400).json({
+                        result: null,
+                        error: 'data did not modified'
+                    })
+                } else {
+                    res.status(200).json({
+                        result: 'success fully modified data',
+                        error: null
+                    })
+                }
+            })
+
+            .catch((err) => {
+                res.status(500).json({
+                    result: null,
+                    error: err
+                })
+            })
     }
 }
 
