@@ -152,15 +152,16 @@ class UserController {
 
     static getPoints(req, res, next) {
         let {_id} = res.locals.payloads
+        let userData = {}
         User.findById(_id)
             .then((user) => {
                 if (user) {
-                    res.status(200).json({
-                        result: {
-                            _id: user._id,
-                            points: user.points
-                        },
-                        error: null
+                    userData = user
+                    
+                    return Item.find({
+                        pointsRequired: {
+                            $lte: user.points
+                        }
                     })
                 } else {
                     res.status(400).json({
@@ -170,6 +171,19 @@ class UserController {
                         }
                     })
                 }
+            })
+
+            .then((items) => {
+                res.status(200).json({
+                    result: {
+                        user: {
+                            _id: userData._id,
+                            points: userData.points
+                        },
+                        items: items
+                    },
+                    error: null
+                })
             })
 
             .catch((err) => {
@@ -184,8 +198,8 @@ class UserController {
         let userId = res.locals.payloads._id
         let items = req.body.items
         let total = 0;
+        let transaction = {}
         let promises = items.map( i => {
-            console.log(i.itemId);
 
             return Item.findById(i.itemId)
                 .then((item) => {
@@ -209,13 +223,31 @@ class UserController {
                     items: data
                 })
             })
+
             .then((result) => {
+                transaction = result
+                let points = Math.floor(result.totalPrice / 100000)
+                
+                return User.findByIdAndUpdate(result.userId, {
+                    $inc: {
+                        points: points
+                    }
+                })
+            })
+
+            .then((updated) => {
                 res.status(201).json({
-                    result, 
+                    result: {
+                        transaction: transaction,
+                        updated: {
+                            userId: updated._id,
+                            points: updated.points
+                        }
+                    }, 
                     error: null
                 })
             })
-            
+        
             .catch((err) => {
                 res.status(500).json({
                     result: null,
