@@ -13,17 +13,9 @@ var transactionSchema = new Schema({
     total: {
         type: Number
     },
-    items: [
-        {
-            type: Schema.Types.ObjectId, 
-            ref: 'Item'
-        }, {
-            amount: {
-                type: number,
-                required: [true, 'Items amount required']
-            }
-        }
-    ]
+    items: {
+        type: Array
+    }
 })
 
 var Transaction = mongoose.model('Transaction', transactionSchema)

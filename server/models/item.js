@@ -10,6 +10,10 @@ var itemSchema = new Schema({
         type: Number,
         required: [true, 'Price required'],
         min: [1, 'Price must be more than 0']
+    },
+    pointsRequired: {
+        type: Number,
+        default: null
     }
 })
 

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const UserController = require('../controllers/usercontrol')
 const usersRoutes = require('./users')
+const itemsRoutes = require('./items')
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -10,9 +10,8 @@ router.get('/', function(req, res, next) {
   })
 });
 
-router.post('/register', UserController.registerUser)
-router.post('/login', UserController.loginUser)
 router.use('/users',usersRoutes)
+router.use('/items',itemsRoutes)
 
 router.use((req, res, next) => {
   res.status(404).json({

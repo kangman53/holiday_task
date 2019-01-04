@@ -17,9 +17,17 @@ var userSchema = new Schema({
                 message: `Invalid email format`
             }, {
                 isAsync: true,
-                validator: (value, callback) => {
+                validator: function(value, callback) {
                     User.findOne({email: value}, (err, user) => {
-                        callback(!user)
+                        if (user) {
+                            if (mongoose.Types.ObjectId(user._id).toString() != mongoose.Types.ObjectId(this._id).toString()) {
+                                callback(false)
+                            } else {
+                                callback(true)
+                            }
+                        } else {
+                            callback(true)
+                        }
                     })
                 },
                 message: 'This email address is already registered'
@@ -31,6 +39,14 @@ var userSchema = new Schema({
         type: String,
         required: [true, 'Password required!'],
         minlength: [6, 'Your password must be at least 6 characters long. Try another password.']
+    },
+    role: {
+        type: String,
+        default: 'customer'
+    },
+    points: {
+        type: Number,
+        default: 0
     }
 })
 

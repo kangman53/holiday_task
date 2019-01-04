@@ -1,7 +1,8 @@
 require('dotenv').config()
-const User = require('../models/user')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
+const {User} = require('../models')
+const {Item} = require('../models')
 
 class UserController {
     static registerUser(req, res, next){
@@ -40,9 +41,7 @@ class UserController {
                 if (user) {
                     if (bcrypt.compareSync(req.body.password, user.password)) {
                         let token = jwt.sign({
-                            _id: user._id,
-                            name: user.name,
-                            email: user.email
+                            _id: user._id
                         }, process.env.JWT_SECRET)
 
                         res.status(200).json({
@@ -83,7 +82,8 @@ class UserController {
                         result: {
                             _id: user._id,
                             name: user.name,
-                            email: user.email
+                            email: user.email,
+                            points: user.points
                         },
                         error: null
                     })
@@ -95,6 +95,13 @@ class UserController {
                         }
                     })
                 }
+            })
+
+            .catch((err) => {
+                res.status(500).json({
+                    result: null,
+                    error: err
+                })
             })
     }
 
@@ -130,7 +137,7 @@ class UserController {
                     })
                 } else {
                     res.status(200).json({
-                        result: 'success fully modified data',
+                        result: 'successfully modified data',
                         error: null
                     })
                 }
@@ -142,6 +149,53 @@ class UserController {
                     error: err
                 })
             })
+    }
+
+    static getPoints(req, res, next) {
+        let {_id} = res.locals.payloads
+        User.findById(_id)
+            .then((user) => {
+                if (user) {
+                    res.status(200).json({
+                        result: {
+                            _id: user._id,
+                            points: user.points
+                        },
+                        error: null
+                    })
+                } else {
+                    res.status(400).json({
+                        result: null,
+                        error: {
+                            message: 'User not found'
+                        }
+                    })
+                }
+            })
+
+            .catch((err) => {
+                res.status(500).json({
+                    result: null,
+                    error: err
+                })
+            })
+    }
+
+    static addToCart(req, res, next) {
+        let {_id} = req.locals.payloads
+        let amount = req.body.amount
+        let itemId = req.body.itemId
+        Item.findById(itemId)
+            .then((item) => {
+                res.json(item)
+            })
+
+            .catch((err) => {
+                res.json(err)
+            })
+
+
+        
     }
 }
 
