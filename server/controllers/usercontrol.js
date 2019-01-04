@@ -1,8 +1,7 @@
 require('dotenv').config()
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
-const {User} = require('../models')
-const {Item} = require('../models')
+const {User, Item, Transaction} = require('../models')
 
 class UserController {
     static registerUser(req, res, next){
@@ -181,21 +180,96 @@ class UserController {
             })
     }
 
-    static addToCart(req, res, next) {
-        let {_id} = req.locals.payloads
-        let amount = req.body.amount
-        let itemId = req.body.itemId
-        Item.findById(itemId)
-            .then((item) => {
-                res.json(item)
+    static addTransaction(req, res, next) {
+        let userId = res.locals.payloads._id
+        let items = req.body.items
+        let total = 0;
+        let promises = items.map( i => {
+            console.log(i.itemId);
+
+            return Item.findById(i.itemId)
+                .then((item) => {
+                    if (item) {
+                        total += i.amount * item.price
+                       return {
+                           itemId: item._id,
+                           amount: i.amount
+                       }                        
+                    } else {
+                        throw ('Item not found')
+                    }
+                })
+        })
+
+        Promise.all(promises)
+            .then((data) => {
+                return Transaction.create({
+                    userId: userId,
+                    totalPrice: total,
+                    items: data
+                })
+            })
+            .then((result) => {
+                res.status(201).json({
+                    result, 
+                    error: null
+                })
+            })
+            
+            .catch((err) => {
+                res.status(500).json({
+                    result: null,
+                    error: err
+                })
+            })
+    }
+
+    static getTransactions(req, res, next) {
+        let userId = res.locals.payloads._id
+        Transaction.find({
+            userId: userId
+        })
+            .populate({
+                path:'items.itemId',
+                select: 'name'
+            })
+            .then((transactions) => {
+                res.json({
+                    result: transactions
+                })
             })
 
             .catch((err) => {
-                res.json(err)
+                res.json({
+                    error: err
+                })
+            })
+    }
+
+    static detailTransaction(req, res, next) {
+        let userId = res.locals.payloads._id
+        let transactionId = req.params.id
+        Transaction.findOne({
+            _id: transactionId,
+            userId: userId
+        })
+            .populate({
+                path:'items.itemId'
             })
 
+            .then((transaction) => {
+                res.json({
+                    result: transaction,
+                    error: null
+                })
+            })
 
-        
+            .catch((err) => {
+                res.json({
+                    result: null,
+                    error: err
+                })
+            })
     }
 }
 
